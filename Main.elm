@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Events exposing (..)
+import Html.Attributes
 import Random
 import Random.List exposing (shuffle)
 
@@ -37,6 +38,7 @@ type Page
 type alias Advancement =
     { name : String
     , initial : Int
+    , outcomeText : String
     , outcomes : Deck
     }
 
@@ -54,16 +56,16 @@ type Outcome
 initialAdvancements : List Advancement
 initialAdvancements =
     List.sortBy .name
-        [ Advancement "Juno Rockets" 3 []
-        , Advancement "Soyuz Rockets" 3 []
-        , Advancement "Atlas Rockets" 3 []
-        , Advancement "Saturn Rockets" 3 []
-        , Advancement "Ion Thrusters" 3 []
-        , Advancement "Landing" 3 []
-        , Advancement "Life Support" 3 []
-        , Advancement "Re-entry" 3 []
-        , Advancement "Rendezvous" 3 []
-        , Advancement "Surveying" 1 []
+        [ Advancement "Juno Rockets" 3 "The firing of the Juno" []
+        , Advancement "Soyuz Rockets" 3 "The firing of the Soyuz" []
+        , Advancement "Atlas Rockets" 3 "The firing of the Atlas" []
+        , Advancement "Saturn Rockets" 3 "The firing of the Saturn" []
+        , Advancement "Ion Thrusters" 3 "The firing of the Ion Thruster" []
+        , Advancement "Landing" 3 "The landing" []
+        , Advancement "Life Support" 3 "The use of life support" []
+        , Advancement "Re-entry" 3 "The re-entry" []
+        , Advancement "Rendezvous" 3 "The rendezvous" []
+        , Advancement "Surveying" 1 "The survey" []
         ]
 
 
@@ -100,6 +102,7 @@ type Msg
     | UpdateDiscards Advancement (List Outcome)
     | ShuffleOutcomes (List Outcome)
     | ShowUnresearched
+    | ShowResearched
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -128,6 +131,9 @@ update msg model =
 
         ShowUnresearched ->
             ( { model | page = ChooseAdvancement }, Cmd.none )
+
+        ShowResearched ->
+            ( { model | page = Advancements }, Cmd.none )
 
 
 updateAdv : List Advancement -> Advancement -> List Advancement
@@ -207,46 +213,46 @@ view model =
             advancementsPage model
 
         ChooseOutcome adv ->
-            chooseOutcomePage model adv
+            outcomePage model adv
 
         ChooseAdvancement ->
             chooseAdvancementPage model
 
 
-chooseOutcomePage : Model -> Advancement -> Html Msg
-chooseOutcomePage model adv =
+outcomePage : Model -> Advancement -> Html Msg
+outcomePage model adv =
     let
-        testOption : Advancement -> String -> Int -> Html Msg
-        testOption adv desc cost =
-            div []
-                [ text ("It was a " ++ desc ++ "!")
+        testOption : Advancement -> String -> Int -> String -> Html Msg
+        testOption adv desc cost colour =
+            div [ Html.Attributes.style [ ( "backgroundColor", colour ) ] ]
+                [ text (adv.outcomeText ++ " was a " ++ desc ++ ".")
+                , br [] []
                 , button [ onClick (DiscardOutcome adv) ] [ text ("Discard for $" ++ toString cost) ]
+                , if cost > 0 then
+                    text " or "
+                  else
+                    text ""
                 , if cost > 0 then
                     button [ onClick (ReplaceOutcome adv) ] [ text "Replace outcome" ]
                   else
                     text ""
                 ]
     in
-        div []
-            [ h2 []
-                [ text ("Testing " ++ adv.name)
-                ]
-            , case List.head adv.outcomes of
-                Just Success ->
-                    if List.length adv.outcomes == 1 then
-                        testOption adv "Success, and the last outcome" 0
-                    else
-                        testOption adv "Success" 10
+        case List.head adv.outcomes of
+            Just Success ->
+                if List.length adv.outcomes == 1 then
+                    testOption adv "Success, and the last outcome" 0 " green"
+                else
+                    testOption adv "Success" 10 "green"
 
-                Just MinorFailure ->
-                    testOption adv "Minor Failure" 5
+            Just MinorFailure ->
+                testOption adv "Minor Failure" 5 "orange"
 
-                Just MajorFailure ->
-                    testOption adv "Major Failure" 5
+            Just MajorFailure ->
+                testOption adv "Major Failure" 5 "red"
 
-                Nothing ->
-                    div [] [ text "Something blew up on the pad!" ]
-            ]
+            Nothing ->
+                div [] [ text "Something blew up on the pad!" ]
 
 
 chooseAdvancementPage : Model -> Html Msg
@@ -261,8 +267,9 @@ chooseAdvancementPage model =
     in
         div []
             [ h2 [] [ text "Research" ]
-            , div []
-                (List.filterMap unresearchedAdv model.advancements)
+            , div [] (List.filterMap unresearchedAdv model.advancements)
+            , p [] []
+            , div [] [ button [ onClick ShowResearched ] [ text "cancel" ] ]
             ]
 
 
@@ -271,20 +278,25 @@ advancementsPage model =
     let
         currentAdv : Advancement -> Maybe (Html Msg)
         currentAdv adv =
-            if not (List.isEmpty adv.outcomes) then
+            if adv.initial == 0 then
                 div []
-                    [ button [ onClick (TestOutcome adv) ]
-                        [ text (adv.name ++ "(" ++ toString (List.length (adv.outcomes)) ++ ")") ]
+                    [ if List.length (adv.outcomes) > 0 then
+                        button [ onClick (TestOutcome adv) ]
+                            [ text ("Use " ++ adv.name ++ " (" ++ toString (List.length (adv.outcomes)) ++ ")") ]
+                      else
+                        button [ Html.Attributes.disabled True ]
+                            [ text (adv.name ++ " complete") ]
                     ]
                     |> Just
             else
                 Nothing
     in
         div []
-            [ h2
+            [ h3
                 []
-                [ text "Test" ]
+                [ text "Advancements" ]
             , div []
                 (List.filterMap currentAdv model.advancements)
+            , p [] []
             , button [ onClick ShowUnresearched ] [ text "Research Advancement" ]
             ]
