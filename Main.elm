@@ -69,7 +69,7 @@ initialAdvancements =
         ]
 
 
-initialOutcomes : List Outcome
+initialOutcomes : Deck
 initialOutcomes =
     List.concat
         [ List.repeat 60 Success
@@ -98,9 +98,9 @@ type Msg
     | ResearchAdvancement Advancement
     | DiscardOutcome Advancement
     | ReplaceOutcome Advancement
-    | UpdateAdvOutcomes Advancement (List Outcome)
-    | UpdateDiscards Advancement (List Outcome)
-    | ShuffleOutcomes (List Outcome)
+    | UpdateAdvOutcomes Advancement Deck
+    | UpdateDiscards Advancement Deck
+    | ShuffleOutcomes Deck
     | ShowUnresearched
     | ShowResearched
 
@@ -148,13 +148,13 @@ updateAdv advs adv =
         advs
 
 
-updateAdvOutcomes : Model -> Advancement -> List Outcome -> Model
+updateAdvOutcomes : Model -> Advancement -> Deck -> Model
 updateAdvOutcomes model adv outcomes =
     -- Replace adv  with supplied list.
     { model | advancements = updateAdv model.advancements { adv | outcomes = outcomes } }
 
 
-updateDiscards : Model -> Advancement -> List Outcome -> Model
+updateDiscards : Model -> Advancement -> Deck -> Model
 updateDiscards model adv discards =
     -- Replace discards with supplied list.
     -- Remove head from adv
