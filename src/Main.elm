@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Browser
 import Html exposing (..)
 import Html.Events exposing (..)
 import Html.Attributes
@@ -7,9 +8,9 @@ import Random
 import Random.List exposing (shuffle)
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
-    Html.program
+    Browser.element
         { init = init
         , view = view
         , update = update
@@ -78,8 +79,8 @@ initialOutcomes =
         ]
 
 
-init : ( Model, Cmd Msg )
-init =
+init : () -> ( Model, Cmd Msg )
+init _ =
     ( Model
         initialAdvancements
         []
@@ -222,12 +223,12 @@ view model =
 outcomePage : Model -> Advancement -> Html Msg
 outcomePage model adv =
     let
-        testOption : Advancement -> String -> Int -> String -> Html Msg
-        testOption adv desc cost colour =
-            div [ Html.Attributes.style [ ( "backgroundColor", colour ) ] ]
+        testOption : String -> Int -> String -> Html Msg
+        testOption desc cost colour =
+            div [ Html.Attributes.style "backgroundColor" colour ]
                 [ text (adv.outcomeText ++ " was a " ++ desc ++ ".")
                 , br [] []
-                , button [ onClick (DiscardOutcome adv) ] [ text ("Discard for $" ++ toString cost) ]
+                , button [ onClick (DiscardOutcome adv) ] [ text ("Discard for $" ++ String.fromInt cost) ]
                 , if cost > 0 then
                     text " or "
                   else
@@ -241,15 +242,15 @@ outcomePage model adv =
         case List.head adv.outcomes of
             Just Success ->
                 if List.length adv.outcomes == 1 then
-                    testOption adv "Success, and the last outcome" 0 " green"
+                    testOption "Success, and the last outcome" 0 " green"
                 else
-                    testOption adv "Success" 10 "green"
+                    testOption "Success" 10 "green"
 
             Just MinorFailure ->
-                testOption adv "Minor Failure" 5 "orange"
+                testOption "Minor Failure" 5 "orange"
 
             Just MajorFailure ->
-                testOption adv "Major Failure" 5 "red"
+                testOption "Major Failure" 5 "red"
 
             Nothing ->
                 div [] [ text "Something blew up on the pad!" ]
@@ -282,7 +283,7 @@ advancementsPage model =
                 div []
                     [ if List.length (adv.outcomes) > 0 then
                         button [ onClick (TestOutcome adv) ]
-                            [ text ("Use " ++ adv.name ++ " (" ++ toString (List.length (adv.outcomes)) ++ ")") ]
+                            [ text ("Use " ++ adv.name ++ " (" ++ String.fromInt (List.length (adv.outcomes)) ++ ")") ]
                       else
                         button [ Html.Attributes.disabled True ]
                             [ text (adv.name ++ " complete") ]
